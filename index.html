@@ -1,1 +1,295 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>منيو الكافيه | Café Menu</title>
+<style>
+:root{
+  --bg:#faf6f1; --card:#ffffff; --text:#2b1d14; --muted:#6f5d50;
+  --accent:#8a4b24; --accent-soft:#f1e3d6; --line:#e6d9cc; --hot:#c2410c; --cold:#0e7490;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#1a120d; --card:#251a13; --text:#f5ece3; --muted:#bfae9f;
+        --accent:#e0a373; --accent-soft:#3a2a1e; --line:#3b2c20; --hot:#fb923c; --cold:#67e8f9;}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:"Segoe UI",Tahoma,"Noto Sans Arabic","Noto Sans",system-ui,-apple-system,Arial,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.topbar{
+  position:sticky;top:0;z-index:20;background:var(--bg);
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:10px 16px;border-bottom:1px solid var(--line);
+}
+.brand{font-weight:700;font-size:18px;color:var(--accent)}
+.lang{display:flex;border:1.5px solid var(--accent);border-radius:999px;overflow:hidden}
+.lang button{
+  border:0;background:transparent;color:var(--accent);font:inherit;font-weight:700;
+  padding:6px 16px;cursor:pointer;min-height:36px;
+}
+.lang button.on{background:var(--accent);color:#fff}
+.hero{text-align:center;padding:28px 16px 12px;max-width:720px;margin:0 auto}
+.hero h1{font-size:28px;line-height:1.3;margin-bottom:8px}
+.hero p{color:var(--muted)}
+.hours{
+  display:inline-block;margin-top:14px;padding:8px 16px;border-radius:999px;
+  background:var(--accent-soft);font-weight:600;
+}
+.note{font-size:14px;color:var(--muted);margin-top:12px}
+.legend{margin-top:6px;font-size:14px;color:var(--muted)}
+nav{
+  display:flex;gap:8px;overflow-x:auto;padding:14px 16px;max-width:720px;margin:0 auto;
+  scrollbar-width:none;
+}
+nav::-webkit-scrollbar{display:none}
+nav a{
+  flex:0 0 auto;text-decoration:none;color:var(--text);border:1px solid var(--line);
+  background:var(--card);padding:7px 14px;border-radius:999px;font-size:15px;white-space:nowrap;
+}
+main{max-width:720px;margin:0 auto;padding:0 16px 32px}
+section{padding-top:20px;scroll-margin-top:64px}
+section h2{
+  font-size:21px;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid var(--accent);
+  display:inline-block;
+}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:14px;margin-bottom:10px;
+}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.card h3{font-size:17px;line-height:1.35}
+.card p{font-size:14px;color:var(--muted);margin-top:2px}
+.price{white-space:nowrap;font-size:18px;font-weight:700;color:var(--accent);text-align:end}
+.price small{font-size:12px;font-weight:600;color:var(--muted)}
+.opts{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{
+  border:0;background:transparent;color:var(--text);font:inherit;font-size:14px;
+  padding:6px 14px;cursor:pointer;min-height:36px;
+}
+.seg button.on[data-m="hot"]{background:var(--hot);color:#fff}
+.seg button.on[data-m="cold"]{background:var(--cold);color:#fff}
+.badge{font-size:13px;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--text)}
+.same{font-size:12px;color:var(--muted)}
+footer{
+  text-align:center;color:var(--muted);font-size:14px;padding:20px 16px 32px;
+  border-top:1px solid var(--line);max-width:720px;margin:0 auto;
+}
+@media (min-width:600px){.hero h1{font-size:34px}.card{padding:16px}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand" id="brand"></div>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" id="btn-ar">عربي</button>
+    <button type="button" id="btn-en">EN</button>
+  </div>
+</header>
+
+<div class="hero">
+  <h1 id="welcome"></h1>
+  <p id="tagline"></p>
+  <div class="hours" id="hours"></div>
+  <p class="note" id="vat"></p>
+  <p class="legend" id="legend"></p>
+</div>
+
+<nav id="nav" aria-label="Sections"></nav>
+<main id="menu"></main>
+<footer id="foot"></footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var UI = {
+    ar: {
+      title: "منيو الكافيه",
+      brand: "☕ كافيهنا",
+      welcome: "أهلاً بك في كافيهنا",
+      tagline: "قهوة مختصة وكلاسيكية، تُحضَّر بعناية في كل كوب، حارة أو باردة كما تحب.",
+      hours: "🕒 من 6:00 صباحاً حتى 12:00 منتصف الليل، يومياً",
+      vat: "الأسعار بالريال السعودي (ر.س) وتشمل ضريبة القيمة المضافة.",
+      legend: "🔥 حار  ·  🧊 بارد",
+      hot: "🔥 حار", cold: "🧊 بارد",
+      hotOnly: "🔥 حار فقط", coldOnly: "🧊 بارد فقط",
+      same: "السعر نفسه للخيارين",
+      cur: "ر.س",
+      foot: "يرجى إبلاغنا بأي حساسية غذائية قبل الطلب."
+    },
+    en: {
+      title: "Café Menu",
+      brand: "☕ Our Café",
+      welcome: "Welcome to Our Café",
+      tagline: "Specialty and classic coffee, crafted with care in every cup, hot or iced, just the way you like it.",
+      hours: "🕒 6:00 AM – 12:00 AM, Daily",
+      vat: "All prices are in Saudi Riyals (SAR) and include VAT.",
+      legend: "🔥 Hot  ·  🧊 Iced",
+      hot: "🔥 Hot", cold: "🧊 Iced",
+      hotOnly: "🔥 Hot only", coldOnly: "🧊 Iced only",
+      same: "Same price for both",
+      cur: "SAR",
+      foot: "Please tell us about any food allergies before ordering."
+    }
+  };
+
+  /* Item: [nameAr, nameEn, descAr, descEn, hotPrice, coldPrice]  (null = not available) */
+  var SECTIONS = [
+    { id: "black", ar: "القهوة السوداء", en: "Black Coffee", toggle: true, items: [
+      ["إسبريسو", "Espresso", "شوت مركّز بقوام غني ورغوة ذهبية.", "A concentrated shot with rich body and golden crema.", 11, null],
+      ["إسبريسو دبل", "Double Espresso", "شوتان من الإسبريسو لنكهة أقوى.", "Two shots of espresso for a bolder taste.", 14, null],
+      ["أمريكانو", "Americano", "إسبريسو مخفف بالماء الساخن أو المثلج.", "Espresso lightened with hot water or poured over ice.", 13, 14],
+      ["قهوة تركية", "Turkish Coffee", "قهوة مطحونة ناعماً تُقدَّم بالطريقة التقليدية.", "Finely ground coffee served in the traditional way.", 12, null],
+      ["قهوة سعودية (دلة)", "Saudi Coffee (Dallah)", "قهوة عربية بالهيل والزعفران، تُقدَّم مع التمر.", "Arabic coffee with cardamom and saffron, served with dates.", 30, null],
+      ["في 60", "V60", "قهوة مختصة مقطّرة يدوياً بنكهة نقية وخفيفة.", "Specialty pour-over coffee with a clean, light flavor.", 22, null],
+      ["كيمكس", "Chemex", "قهوة مقطّرة بطعم صافٍ ومتوازن، تكفي لشخصين.", "Smooth, balanced pour-over coffee, enough for two.", 26, null]
+    ]},
+    { id: "milk", ar: "القهوة بالحليب", en: "Coffee with Milk", toggle: true, items: [
+      ["كورتادو", "Cortado", "إسبريسو مع كمية قليلة من الحليب المبخّر.", "Espresso cut with a little steamed milk.", 16, null],
+      ["كابتشينو", "Cappuccino", "إسبريسو مع حليب مبخّر ورغوة كثيفة.", "Espresso with steamed milk and thick foam.", 17, null],
+      ["فلات وايت", "Flat White", "إسبريسو مع حليب مخملي بقوام ناعم.", "Espresso with velvety microfoam milk.", 18, null],
+      ["لاتيه", "Latte", "إسبريسو مع حليب مبخّر وطبقة رغوة خفيفة.", "Espresso with steamed milk and a light layer of foam.", 18, 19],
+      ["سبانش لاتيه", "Spanish Latte", "لاتيه محلّى بالحليب المكثّف.", "Latte sweetened with condensed milk.", 21, 21],
+      ["موكا", "Mocha", "إسبريسو مع الشوكولاتة والحليب.", "Espresso with chocolate and milk.", 20, 20],
+      ["كراميل ماكياتو", "Caramel Macchiato", "حليب بالفانيلا وإسبريسو وصلصة الكراميل.", "Vanilla milk, espresso, and caramel drizzle.", 21, 21],
+      ["لاتيه بالزعفران", "Saffron Latte", "لاتيه بنكهة الزعفران والعسل.", "Latte with saffron and honey.", 22, 22]
+    ]},
+    { id: "cold", ar: "مشروبات باردة ومنعشة", en: "Cold & Refreshing Drinks", toggle: true, items: [
+      ["كولد برو", "Cold Brew", "قهوة منقوعة على البارد لمدة 18 ساعة، ناعمة وقليلة الحموضة.", "Coffee steeped cold for 18 hours, smooth and low in acidity.", null, 20],
+      ["فرابيه قهوة", "Coffee Frappé", "قهوة مثلجة مخفوقة بقوام كريمي.", "Blended iced coffee with a creamy texture.", null, 22],
+      ["فرابيه كراميل", "Caramel Frappé", "مشروب مثلج مخفوق بالكراميل والقهوة.", "Blended iced drink with caramel and coffee.", null, 23],
+      ["ليمون بالنعناع", "Lemon Mint", "عصير ليمون طازج مع النعناع.", "Fresh lemon juice with mint.", null, 16],
+      ["شاي مثلج بالخوخ", "Peach Iced Tea", "شاي بارد منعش بنكهة الخوخ.", "Refreshing cold tea with peach flavor.", null, 15],
+      ["ماء", "Water", "ماء معدني (330 مل).", "Mineral water (330 ml).", null, 2]
+    ]},
+    { id: "extras", ar: "الإضافات", en: "Extras", toggle: false, items: [
+      ["شوت إسبريسو إضافي", "Extra Espresso Shot", "", "", 4, null],
+      ["حليب الشوفان", "Oat Milk", "", "", 4, null],
+      ["حليب اللوز", "Almond Milk", "", "", 4, null],
+      ["نكهة (فانيلا / كراميل / بندق)", "Syrup (Vanilla / Caramel / Hazelnut)", "", "", 3, null],
+      ["كريمة مخفوقة", "Whipped Cream", "", "", 3, null]
+    ]},
+    { id: "bites", ar: "المخبوزات والحلويات", en: "Pastries & Sweets", toggle: false, items: [
+      ["كرواسون سادة", "Plain Croissant", "كرواسون بالزبدة، طازج ومقرمش.", "Fresh, flaky butter croissant.", 11, null],
+      ["كرواسون بالجبن", "Cheese Croissant", "محشو بالجبن الذائب.", "Filled with melted cheese.", 14, null],
+      ["معمول بالتمر", "Date Maamoul", "بسكويت تقليدي محشو بالتمر.", "Traditional cookie filled with dates.", 8, null],
+      ["كوكيز الشوكولاتة", "Chocolate Chip Cookie", "كوكيز طري برقائق الشوكولاتة.", "Soft cookie with chocolate chips.", 9, null],
+      ["كيكة الموز", "Banana Bread", "شريحة كيك الموز مع الجوز.", "A slice of banana bread with walnuts.", 12, null],
+      ["تشيز كيك", "Cheesecake", "شريحة تشيز كيك كريمية.", "A slice of creamy cheesecake.", 24, null],
+      ["تمر فاخر", "Premium Dates", "حبات تمر مختارة (5 حبات).", "Selected dates (5 pieces).", 10, null]
+    ]}
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var lang = "ar";
+  var sel = {}; /* item id -> "hot" | "cold" */
+
+  function initLang() {
+    try {
+      var q = new URLSearchParams(location.search).get("lang");
+      if (q === "ar" || q === "en") return q;
+      var s = localStorage.getItem("menu-lang");
+      if (s === "ar" || s === "en") return s;
+    } catch (e) {}
+    return (navigator.language || "ar").toLowerCase().indexOf("en") === 0 ? "en" : "ar";
+  }
+
+  function priceHtml(v, t) {
+    return "<b>" + v + "</b> <small>" + t.cur + "</small>";
+  }
+
+  function renderItem(sec, it, idx) {
+    var t = UI[lang], ar = lang === "ar";
+    var id = sec.id + "-" + idx;
+    var hot = it[4], cold = it[5];
+    var both = hot !== null && cold !== null;
+    if (!sel[id]) sel[id] = hot !== null ? "hot" : "cold";
+    var cur = sel[id];
+    var price = cur === "hot" ? hot : cold;
+    var name = ar ? it[0] : it[1];
+    var desc = ar ? it[2] : it[3];
+
+    var opts = "";
+    if (sec.toggle) {
+      if (both) {
+        opts = '<div class="opts"><div class="seg" role="radiogroup" aria-label="' + name + '">' +
+          '<button type="button" role="radio" data-id="' + id + '" data-m="hot" aria-checked="' + (cur === "hot") + '" class="' + (cur === "hot" ? "on" : "") + '">' + t.hot + '</button>' +
+          '<button type="button" role="radio" data-id="' + id + '" data-m="cold" aria-checked="' + (cur === "cold") + '" class="' + (cur === "cold" ? "on" : "") + '">' + t.cold + '</button>' +
+          '</div>' + (hot === cold ? '<span class="same">' + t.same + '</span>' : '') + '</div>';
+      } else {
+        opts = '<div class="opts"><span class="badge">' + (hot !== null ? t.hotOnly : t.coldOnly) + '</span></div>';
+      }
+    }
+
+    return '<article class="card"><div class="top"><div><h3>' + name + '</h3>' +
+      (desc ? '<p>' + desc + '</p>' : '') + '</div><div class="price" id="p-' + id + '">' +
+      priceHtml(price, t) + '</div></div>' + opts + '</article>';
+  }
+
+  function render() {
+    var t = UI[lang], ar = lang === "ar";
+    document.documentElement.lang = lang;
+    document.documentElement.dir = ar ? "rtl" : "ltr";
+    document.title = t.title;
+    $("brand").textContent = t.brand;
+    $("welcome").textContent = t.welcome;
+    $("tagline").textContent = t.tagline;
+    $("hours").textContent = t.hours;
+    $("vat").textContent = t.vat;
+    $("legend").textContent = t.legend;
+    $("foot").textContent = t.foot;
+    $("btn-ar").className = ar ? "on" : "";
+    $("btn-en").className = ar ? "" : "on";
+    $("btn-ar").setAttribute("aria-pressed", ar);
+    $("btn-en").setAttribute("aria-pressed", !ar);
+
+    var nav = "", html = "";
+    SECTIONS.forEach(function (sec) {
+      var title = ar ? sec.ar : sec.en;
+      nav += '<a href="#' + sec.id + '">' + title + "</a>";
+      html += '<section id="' + sec.id + '"><h2>' + title + "</h2>";
+      sec.items.forEach(function (it, i) { html += renderItem(sec, it, i); });
+      html += "</section>";
+    });
+    $("nav").innerHTML = nav;
+    $("menu").innerHTML = html;
+  }
+
+  function setLang(l) {
+    lang = l;
+    try { localStorage.setItem("menu-lang", l); } catch (e) {}
+    render();
+  }
+
+  $("btn-ar").addEventListener("click", function () { setLang("ar"); });
+  $("btn-en").addEventListener("click", function () { setLang("en"); });
+
+  $("menu").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-id]");
+    if (!b) return;
+    var id = b.getAttribute("data-id"), m = b.getAttribute("data-m");
+    sel[id] = m;
+    var parts = id.split("-"), sec = SECTIONS.filter(function (s) { return s.id === parts[0]; })[0];
+    var it = sec.items[parseInt(parts[1], 10)];
+    $("p-" + id).innerHTML = priceHtml(m === "hot" ? it[4] : it[5], UI[lang]);
+    var btns = b.parentNode.querySelectorAll("button");
+    for (var i = 0; i < btns.length; i++) {
+      var on = btns[i] === b;
+      btns[i].className = on ? "on" : "";
+      btns[i].setAttribute("aria-checked", on);
+    }
+  });
+
+  lang = initLang();
+  render();
+})();
+</script>
+</body>
+</html>
 
